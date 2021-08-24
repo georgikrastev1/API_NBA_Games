@@ -13,6 +13,8 @@ router.register('teams', views.TeamsViewSet)
 router.register('sign-contract', views.SignedContractViewSet)
 
 urlpatterns = [
+    #API 6
+    path('players/', views.players_scores, name="Players_Scores"),
     path('', include(router.urls)),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 

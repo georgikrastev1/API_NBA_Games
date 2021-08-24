@@ -76,3 +76,4 @@ class Signed_contractSerializer(serializers.ModelSerializer):
     class Meta:
         model = Signed_contract
         fields = "__all__"
+
