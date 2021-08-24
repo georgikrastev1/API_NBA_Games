@@ -3,6 +3,8 @@ from api import views
 from rest_framework import routers
 
 router = routers.DefaultRouter()
+#API 1
+router.register('player', views.PlayersViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
