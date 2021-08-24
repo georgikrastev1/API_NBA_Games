@@ -23,4 +23,33 @@ class PlayersSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'name': 'Number of players in a team cannot exceeded 15.'})
 
 
+#API 2
+class GamesSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Games
+        fields = ("id","game_date","team_1","team_2")
+
+    def create(self, validated_data):
+        team_1_selected = int(str(validated_data['team_1'])[14:-1])
+        team_2_selected = int(str(validated_data['team_2'])[14:-1])
+        # check if 1st team selected has games
+        # check if 2nd team selected has games
+        if team_1_selected != team_2_selected:
+            if len(Games.objects.filter(team_1=team_1_selected, game_date=validated_data["game_date"])) == 0 and len(
+                    Games.objects.filter(team_2=team_1_selected, game_date=validated_data["game_date"])) == 0:
+                if len(Games.objects.filter(team_1=team_2_selected,
+                                            game_date=validated_data["game_date"])) == 0 and len(
+                    Games.objects.filter(team_2=team_2_selected, game_date=validated_data["game_date"])) == 0:
+                    player = Games.objects.create(**validated_data)
+                    return player
+                else:
+                    raise serializers.ValidationError(
+                        {'name': f'Team {team_2_selected} already has a game on that day'})
+            else:
+                raise serializers.ValidationError({'name': f'Team {team_1_selected} already has a game on that day'})
+        else:
+            raise serializers.ValidationError({'name': 'The two teams selected are the same.'})
+
+
 

@@ -5,6 +5,8 @@ from rest_framework import routers
 router = routers.DefaultRouter()
 #API 1
 router.register('player', views.PlayersViewSet)
+#API 2
+router.register('game', views.GamesViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
