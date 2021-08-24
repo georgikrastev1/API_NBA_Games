@@ -7,6 +7,8 @@ router = routers.DefaultRouter()
 router.register('player', views.PlayersViewSet)
 #API 2
 router.register('game', views.GamesViewSet)
+#API 4
+router.register('teams', views.TeamsViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

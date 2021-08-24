@@ -1,7 +1,8 @@
 from django.http import HttpResponse,JsonResponse
 from rest_framework import viewsets
 from .models import Teams, Team_Scores, Players, Games, Signed_contract, Player_Scores
-from api.serializers import PlayersSerializer, GamesSerializer
+from api.serializers import PlayersSerializer, GamesSerializer, TeamsSerializer
+from django.db.models import Count, Q
 
 #API 1
 class PlayersViewSet(viewsets.ModelViewSet):
@@ -13,3 +14,10 @@ class PlayersViewSet(viewsets.ModelViewSet):
 class GamesViewSet(viewsets.ModelViewSet):
     queryset = Games.objects.all()
     serializer_class = GamesSerializer
+
+
+#API 4
+class TeamsViewSet(viewsets.ModelViewSet):
+    queryset = Teams.objects.all().annotate(
+        count_wins=Count('team_scores', filter=Q(team_scores__winner="Yes"))).order_by('-count_wins')
+    serializer_class = TeamsSerializer

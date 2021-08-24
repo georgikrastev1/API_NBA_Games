@@ -52,4 +52,9 @@ class GamesSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'name': 'The two teams selected are the same.'})
 
 
+#API 4
+class TeamsSerializer(serializers.ModelSerializer):
 
+    class Meta:
+        model = Teams
+        fields = ("team_name", "id")
