@@ -58,3 +58,21 @@ class TeamsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Teams
         fields = ("team_name", "id")
+
+
+#API 5
+class Signed_contractSerializer(serializers.ModelSerializer):
+    def create(self, validated_data):
+        if len(Signed_contract.objects.filter(start_date_contract__gte=validated_data['start_date_contract'],
+                                              end_date_contract__lte=validated_data['end_date_contract'])) == 0:
+            contract = Signed_contract.objects.create(**validated_data)
+            return contract
+        else:
+            player_id = int(str(validated_data['player_signed'])[16:-1])
+            x = Players.objects.get(id=player_id)
+            player = x.player_name
+            raise serializers.ValidationError({'name': f'{player} has an active contract'})
+
+    class Meta:
+        model = Signed_contract
+        fields = "__all__"

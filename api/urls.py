@@ -9,6 +9,8 @@ router.register('player', views.PlayersViewSet)
 router.register('game', views.GamesViewSet)
 #API 4
 router.register('teams', views.TeamsViewSet)
+#API 5
+router.register('sign-contract', views.SignedContractViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
