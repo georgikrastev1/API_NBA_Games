@@ -10,7 +10,7 @@ router.register('game', views.GamesViewSet)
 #API 4
 router.register('teams', views.TeamsViewSet)
 #API 5
-router.register('sign-contract', views.SignedContractViewSet)
+router.register('sign_contract', views.SignedContractViewSet)
 
 router.register('score_teams', views.TeamScoresViewSet)
 

@@ -3,7 +3,7 @@ from rest_framework import viewsets
 from .models import Teams, Team_Scores, Players, Games, Signed_contract, Player_Scores
 from api.serializers import PlayersSerializer, GamesSerializer, TeamsSerializer, Signed_contractSerializer, \
     TeamScoresSerializer
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
 from rest_framework.decorators import api_view
 import numpy as np
 from rest_framework import status
@@ -24,17 +24,23 @@ class GamesViewSet(viewsets.ModelViewSet):
 
 
 # API 3
-@api_view(['Post'])
+@api_view(['POST'])
 def teams_players_scores(request):
-    scores_all = request.data
+    scores_all = request.data.get("items")
     game_id = scores_all[0].get("game_id")
-    game_get = Games.objects.get(pk=game_id)
+    try:
+        game_get = Games.objects.get(pk=game_id)
+    except:
+        m = f"Invalid game id."
+        return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
     team_information = scores_all[0].get("team_scores")
     player_list = []
+
     # Check if game score has already been recorded
     if Team_Scores.objects.filter(game_id=game_id):
         m = f"Results for the game have already been entered."
         return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
     # Check if  two teams are submitted
     if len(team_information) != 2:
         m = f"Exactly 2 teams have to be submitted."
@@ -55,7 +61,7 @@ def teams_players_scores(request):
             return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
     # Check that there is a definite winner and assign winnter
-    if team_information[0].get("points") == team_information[1].get("team_id"):
+    if team_information[0].get("points") == team_information[1].get("points"):
         m = f"The two teams cannot have equal scores. There must be a winner."
         return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
     win_team_1="No"
@@ -128,7 +134,7 @@ def players_scores(request):
     try:
         x = Player_Scores.objects.filter(game__game_date__year=request.query_params['year'],
                                          player_scored__id=request.query_params['player_id']).values_list(
-            'game__game_date__month').annotate(total=Count('id'))
+            'game__game_date__month').annotate(total=Sum('scored_points'))
     except:
         m = f"Missing or Invalid Year or Player_id. Values entered - year:{request.query_params['year']} & player_id:{request.query_params['player_id']}." \
             f"  Example Format to use: .../players/?year=2021&player_id=1"
@@ -140,7 +146,7 @@ def players_scores(request):
         y = z[:, 1]
         m = [int(i) for i in y]
 
-        return JsonResponse(m, safe=False)
+        return Response(m)
     return Response(m, status=status.HTTP_404_NOT_FOUND)
 
 
