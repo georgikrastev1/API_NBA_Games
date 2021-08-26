@@ -43,6 +43,10 @@ class Team_Scores(models.Model):
     class Meta:
         verbose_name_plural = 'Team_Scores'
 
+    # @property
+    def players_scores(self):
+        return self.game.player_scores_set.all()
+
 
 class Player_Scores(models.Model):
     game = models.ForeignKey(Games, on_delete=models.CASCADE)

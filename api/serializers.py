@@ -77,3 +77,17 @@ class Signed_contractSerializer(serializers.ModelSerializer):
         model = Signed_contract
         fields = "__all__"
 
+
+class PlayerScoresSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Player_Scores
+        fields = ('id','game', 'player_scored', 'scored_points')
+
+
+class TeamScoresSerializer(serializers.ModelSerializer):
+    points = PlayerScoresSerializer(many=True, read_only=False, source='players_scores')
+
+    class Meta:
+        model = Team_Scores
+        fields = ('id', 'scored_points', 'winner', 'game', 'team', "points")

@@ -1,7 +1,8 @@
-from django.http import HttpResponse,JsonResponse
+from django.http import HttpResponse, JsonResponse
 from rest_framework import viewsets
 from .models import Teams, Team_Scores, Players, Games, Signed_contract, Player_Scores
-from api.serializers import PlayersSerializer, GamesSerializer, TeamsSerializer, Signed_contractSerializer
+from api.serializers import PlayersSerializer, GamesSerializer, TeamsSerializer, Signed_contractSerializer, \
+    TeamScoresSerializer
 from django.db.models import Count, Q
 from rest_framework.decorators import api_view
 import numpy as np
@@ -9,51 +10,140 @@ from rest_framework import status
 from rest_framework.response import Response
 import os
 
-#API 1
+
+# API 1
 class PlayersViewSet(viewsets.ModelViewSet):
     queryset = Players.objects.all()
     serializer_class = PlayersSerializer
 
 
-#API 2
+# API 2
 class GamesViewSet(viewsets.ModelViewSet):
     queryset = Games.objects.all()
     serializer_class = GamesSerializer
 
 
-#API 4
+# API 3
+@api_view(['Post'])
+def teams_players_scores(request):
+    scores_all = request.data
+    game_id = scores_all[0].get("game_id")
+    game_get = Games.objects.get(pk=game_id)
+    team_information = scores_all[0].get("team_scores")
+    player_list = []
+    # Check if game score has already been recorded
+    if Team_Scores.objects.filter(game_id=game_id):
+        m = f"Results for the game have already been entered."
+        return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+    # Check if  two teams are submitted
+    if len(team_information) != 2:
+        m = f"Exactly 2 teams have to be submitted."
+        return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+    # Check if teams submitted are different
+    if team_information[0].get("team_id") == team_information[1].get("team_id"):
+        m = f"Team ids are the same."
+        return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+    # Check if team really played in the game
+    for i in range(0, len(team_information)):
+        team_get = Teams.objects.get(pk=team_information[i].get("team_id"))
+        team_players = Players.objects.filter(player_team=team_get).values_list('id', flat=True)
+        player_list.extend(team_players)  # to be used to check if players are part of the tams
+        if game_get.team_1_id != team_get.pk and game_get.team_2_id != team_get.pk:
+            m = f"Team {team_get.pk} did not participate in this game."
+            return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+    # Check that there is a definite winner and assign winnter
+    if team_information[0].get("points") == team_information[1].get("team_id"):
+        m = f"The two teams cannot have equal scores. There must be a winner."
+        return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+    win_team_1="No"
+    win_team_2 = "Yes"
+    if team_information[0].get("points")>team_information[1].get("team_id"):
+        win_team_1="Yes"
+        win_team_2 = "No"
+
+    # check if there are player duplicates:
+    if len(player_list) != len(set(player_list)):
+        m = f"There are duplicate player ids."
+        return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+    # Check if all players submitted really play in that team
+    scores_players = scores_all[0].get("player_scores")
+    for i in range(0, len(scores_players)):
+        player_get = Players.objects.get(pk=scores_players[i].get("player_id"))
+        if player_get.id not in player_list:
+            m = f"Player {player_get.id} is not part of any of the two teams."
+            return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+    # Save team score
+
+    save_team_1_score = Team_Scores(game=game_get, team_id=team_information[0].get("team_id"),
+                                    scored_points=team_information[0].get("points"),
+                                    winner=win_team_1)
+    save_team_1_score.save()
+
+    save_team_2_score = Team_Scores(game=game_get, team_id=team_information[1].get("team_id"),
+                                    scored_points=team_information[1].get("points"),
+                                    winner=win_team_2)
+    save_team_2_score.save()
+
+    # Save Players scores
+    players_sum_points_check = 0
+    for i in range(0, len(scores_players)):
+        save_player_score = Player_Scores(game=game_get, player_scored_id=scores_players[i].get("player_id"),
+                                          scored_points=scores_players[i].get('points'))
+        save_player_score.save()
+        players_sum_points_check = players_sum_points_check+scores_players[i].get('points')
+
+    # check if sum of players' scores are equal to the team's score
+    team_sum_scores=team_information[0].get("points")+team_information[1].get("points")
+    if players_sum_points_check != team_sum_scores:
+        m = f"Successfully Created. Please be aware that the sum of the players'scores ({players_sum_points_check}) is not equal to the total points of the team ({team_sum_scores})"
+        return Response(m, status=status.HTTP_201_CREATED)
+    return Response(status=status.HTTP_201_CREATED)
+
+
+# API 4
 class TeamsViewSet(viewsets.ModelViewSet):
     queryset = Teams.objects.all().annotate(
         count_wins=Count('team_scores', filter=Q(team_scores__winner="Yes"))).order_by('-count_wins')
     serializer_class = TeamsSerializer
 
 
-#API 5
+# API 5
 class SignedContractViewSet(viewsets.ModelViewSet):
     queryset = Signed_contract.objects.all()
     serializer_class = Signed_contractSerializer
 
 
 # API 6
-@api_view (['GET']) #puts in place API conventions - blocks methods other than get, changes the reques
-#http://127.0.0.1:8000/home/?year=2022&player_id=1
+@api_view(['GET'])  # puts in place API conventions - blocks methods other than get, changes the reques
+# http://127.0.0.1:8000/home/?year=2022&player_id=1
 def players_scores(request):
     if "year" not in request.query_params or "player_id" not in request.query_params:
-        m="Please provide an year and a player id. Valid format example: .../players/?year=2021&player_id=1"
-        return Response(m,status=status.HTTP_400_BAD_REQUEST)
+        m = "Please provide an year and a player id. Valid format example: .../players/?year=2021&player_id=1"
+        return Response(m, status=status.HTTP_400_BAD_REQUEST)
     try:
-        x = Player_Scores.objects.filter(game__game_date__year=request.query_params['year'], player_scored__id=request.query_params['player_id']).values_list(
+        x = Player_Scores.objects.filter(game__game_date__year=request.query_params['year'],
+                                         player_scored__id=request.query_params['player_id']).values_list(
             'game__game_date__month').annotate(total=Count('id'))
     except:
         m = f"Missing or Invalid Year or Player_id. Values entered - year:{request.query_params['year']} & player_id:{request.query_params['player_id']}." \
             f"  Example Format to use: .../players/?year=2021&player_id=1"
         # return JsonResponse(m, safe=False)
         return Response(m, status=status.HTTP_400_BAD_REQUEST)
-    m="No results found"
+    m = "No results found"
     if x:
-        z=np.array(x)
+        z = np.array(x)
         y = z[:, 1]
-        m=[int(i) for i in y]
+        m = [int(i) for i in y]
 
         return JsonResponse(m, safe=False)
     return Response(m, status=status.HTTP_404_NOT_FOUND)
+
+
+class TeamScoresViewSet(viewsets.ModelViewSet):
+    queryset = Team_Scores.objects.all()
+    serializer_class = TeamScoresSerializer
