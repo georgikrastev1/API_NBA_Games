@@ -9,6 +9,7 @@ import numpy as np
 from rest_framework import status
 from rest_framework.response import Response
 import os
+import time, timeit
 
 
 # API 1
@@ -36,7 +37,6 @@ def teams_players_scores(request):
         m = f"Invalid game id."
         return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
     team_information = scores_all[0].get("team_scores")
-    print(team_information)
     team_members = []
 
     # Check if game score has already been recorded
@@ -105,7 +105,6 @@ def teams_players_scores(request):
     player_ids=[]
     for i in scores_players:
         player_id = i.get("player_id")
-        print(player_id)
         if type(player_id) != int:
             m = f"Invalid data format for player {player_id}'s id "
             return Response(m, status=status.HTTP_400_BAD_REQUEST)
@@ -172,7 +171,7 @@ class SignedContractViewSet(viewsets.ModelViewSet):
 
 # API 6
 @api_view(['GET'])  # puts in place API conventions - blocks methods other than get, changes the reques
-# http://127.0.0.1:8000/home/?year=2022&player_id=1
+# http://127.0.0.1:8000/players/?year=2021&player_id=41
 def players_scores(request):
     if "year" not in request.query_params or "player_id" not in request.query_params:
         m = "Please provide an year and a player id. Valid format example: .../players/?year=2021&player_id=1"
@@ -189,12 +188,12 @@ def players_scores(request):
     m = "No results found"
     if x:
         z = np.array(x)
-        result_months_dict = {k[0]: k[1] for k in z}
-        months = [[x, 0] for x in range(1, 13)]
-        all_months_dict = {k[0]: k[1] for k in months}
-        all_months_dict.update(result_months_dict)
-        m = list(all_months_dict.values())
-
+        month_all=[[x,0] for x in range(1,13)]
+        for x in z:
+            for i in month_all:
+                if x[0]==i[0]:
+                    i[1]=x[1]
+        m=[x[1] for x in month_all]
         return Response(m)
     return Response(m, status=status.HTTP_404_NOT_FOUND)
 
