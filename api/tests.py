@@ -63,6 +63,17 @@ class CreateNewPlayerTest(TestCase):
         # Contains non-alphanumeric characters
         self.assertEqual(response3.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_create_too_many_players(self):
+        for i in range(1,17):
+            response = client.post(
+                reverse('players-list'),
+                data=json.dumps({
+                    'player_name': 'Georgi Krastev',
+                    'player_team': 2,
+                }),
+                content_type='application/json'
+            )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 # Test API 2: Create Game
 

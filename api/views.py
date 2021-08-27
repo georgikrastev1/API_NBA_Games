@@ -27,14 +27,16 @@ class GamesViewSet(viewsets.ModelViewSet):
 @api_view(['POST'])
 def teams_players_scores(request):
     scores_all = request.data.get("items")
-    game_id = scores_all[0].get("game_id")
+
+    # check if Games id is provided and if game exists
     try:
+        game_id = scores_all[0].get("game_id")
         game_get = Games.objects.get(pk=game_id)
     except:
         m = f"Invalid game id."
         return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
     team_information = scores_all[0].get("team_scores")
-    player_list = []
+    team_members = []
 
     # Check if game score has already been recorded
     if Team_Scores.objects.filter(game_id=game_id):
@@ -47,18 +49,36 @@ def teams_players_scores(request):
         return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
     # Check if teams submitted are different
-    if team_information[0].get("team_id") == team_information[1].get("team_id"):
+    team_1_id=team_information[0].get("team_id")
+    team_2_id = team_information[1].get("team_id")
+    if team_1_id == team_2_id:
         m = f"Team ids are the same."
         return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
-    # Check if team really played in the game
-    for i in range(0, len(team_information)):
-        team_get = Teams.objects.get(pk=team_information[i].get("team_id"))
+    #Check if teams really exist:
+    try:
+        team_get = Teams.objects.get(pk=team_1_id)
         team_players = Players.objects.filter(player_team=team_get).values_list('id', flat=True)
-        player_list.extend(team_players)  # to be used to check if players are part of the tams
+        team_members.extend(team_players)  # to be used to check if players are part of the tams
+        # Check if team really played in the game
         if game_get.team_1_id != team_get.pk and game_get.team_2_id != team_get.pk:
             m = f"Team {team_get.pk} did not participate in this game."
             return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+    except:
+        m = f"Please provide a valid team. ID of first team entered is invalid."
+        return Response(m, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        team_get = Teams.objects.get(pk=team_2_id)
+        team_players = Players.objects.filter(player_team=team_get).values_list('id', flat=True)
+        team_members.extend(team_players)  # to be used to check if players are part of the teams
+        # Check if team really played in the game
+        if game_get.team_1_id != team_get.pk and game_get.team_2_id != team_get.pk:
+            m = f"Team {team_get.pk} did not participate in this game."
+            return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+    except:
+        m = f"Please provide a valid team. ID of second team entered is invalid."
+        return Response(m, status=status.HTTP_400_BAD_REQUEST)
 
     # Check that there is a definite winner and assign winnter
     if team_information[0].get("points") == team_information[1].get("points"):
@@ -71,16 +91,17 @@ def teams_players_scores(request):
         win_team_2 = "No"
 
     # check if there are player duplicates:
-    if len(player_list) != len(set(player_list)):
+    scores_players = scores_all[0].get("player_scores")
+    player_ids=[]
+    for i in scores_players:
+        player_ids.append(i.get("player_id"))
+    if len(player_ids) != len(set(player_ids)):
         m = f"There are duplicate player ids."
         return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
-
     # Check if all players submitted really play in that team
-    scores_players = scores_all[0].get("player_scores")
-    for i in range(0, len(scores_players)):
-        player_get = Players.objects.get(pk=scores_players[i].get("player_id"))
-        if player_get.id not in player_list:
-            m = f"Player {player_get.id} is not part of any of the two teams."
+    for player in player_ids:
+        if player not in team_members:
+            m = f"Player {player} is not part of any of the two teams."
             return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
     # Save team score
@@ -143,8 +164,11 @@ def players_scores(request):
     m = "No results found"
     if x:
         z = np.array(x)
-        y = z[:, 1]
-        m = [int(i) for i in y]
+        result_months_dict = {k[0]: k[1] for k in z}
+        months = [[x, 0] for x in range(1, 13)]
+        all_months_dict = {k[0]: k[1] for k in months}
+        all_months_dict.update(result_months_dict)
+        m = list(all_months_dict.values())
 
         return Response(m)
     return Response(m, status=status.HTTP_404_NOT_FOUND)

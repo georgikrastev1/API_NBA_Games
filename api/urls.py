@@ -20,6 +20,5 @@ urlpatterns = [
     #API 3
     path('score/', views.teams_players_scores, name="teams_players_scores"),
     path('', include(router.urls)),
-    path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
-
+    path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 ]

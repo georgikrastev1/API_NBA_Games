@@ -10,13 +10,13 @@ class PlayersSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         name_verify = validated_data['player_name']
-        if name_verify.isalnum() == False:
+        name_verify_no_spaces=name_verify.replace(' ','')
+        if name_verify_no_spaces.isalnum() == False:
             raise serializers.ValidationError({'name': 'Player names can only contain letters and numbers.'})
-        if name_verify[0].isnumeric() == True:
+        if name_verify_no_spaces[0].isnumeric() == True:
             raise serializers.ValidationError({'name': 'Player names cannot start with numbers.'})
         team_id = int(str(validated_data['player_team'])[14:-1])
-        if len(Players.objects.filter(player_team=team_id)) <= 15:
-            print(len(Players.objects.filter(player_team=team_id)))
+        if len(Players.objects.filter(player_team=team_id)) <= 14:
             player = Players.objects.create(**validated_data)
             return player
         else:
