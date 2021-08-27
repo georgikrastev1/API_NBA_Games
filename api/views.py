@@ -36,6 +36,7 @@ def teams_players_scores(request):
         m = f"Invalid game id."
         return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
     team_information = scores_all[0].get("team_scores")
+    print(team_information)
     team_members = []
 
     # Check if game score has already been recorded
@@ -51,6 +52,10 @@ def teams_players_scores(request):
     # Check if teams submitted are different
     team_1_id=team_information[0].get("team_id")
     team_2_id = team_information[1].get("team_id")
+
+    if type(team_1_id)!=int or type(team_2_id)!=int:
+        m = f"Invalid data format"
+        return Response(m, status=status.HTTP_400_BAD_REQUEST)
     if team_1_id == team_2_id:
         m = f"Team ids are the same."
         return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
@@ -80,8 +85,13 @@ def teams_players_scores(request):
         m = f"Please provide a valid team. ID of second team entered is invalid."
         return Response(m, status=status.HTTP_400_BAD_REQUEST)
 
-    # Check that there is a definite winner and assign winnter
-    if team_information[0].get("points") == team_information[1].get("points"):
+    # Check that there is a definite winner and assign winner
+    team_1_points=team_information[0].get("points")
+    team_2_points = team_information[1].get("points")
+    if type(team_1_points)!=int or type(team_2_points)!=int:
+        m = f"Invalid data format"
+        return Response(m, status=status.HTTP_400_BAD_REQUEST)
+    if team_1_points == team_2_points:
         m = f"The two teams cannot have equal scores. There must be a winner."
         return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
     win_team_1="No"
@@ -94,15 +104,30 @@ def teams_players_scores(request):
     scores_players = scores_all[0].get("player_scores")
     player_ids=[]
     for i in scores_players:
-        player_ids.append(i.get("player_id"))
+        player_id = i.get("player_id")
+        print(player_id)
+        if type(player_id) != int:
+            m = f"Invalid data format for player {player_id}'s id "
+            return Response(m, status=status.HTTP_400_BAD_REQUEST)
+        player_ids.append(player_id)
+        points=i.get("points")
+        if type(points) != int:
+            m = f"Invalid data format for player {player_id}'s points "
+            return Response(m, status=status.HTTP_400_BAD_REQUEST)
     if len(player_ids) != len(set(player_ids)):
         m = f"There are duplicate player ids."
         return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
     # Check if all players submitted really play in that team
     for player in player_ids:
         if player not in team_members:
             m = f"Player {player} is not part of any of the two teams."
             return Response(m, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+
+    if type(team_1_points) != int or type(team_2_points) != int:
+        m = f"Invalid data format"
+        return Response(m, status=status.HTTP_400_BAD_REQUEST)
 
     # Save team score
 
