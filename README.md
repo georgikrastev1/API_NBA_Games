@@ -1,6 +1,36 @@
 ## NAME: Georgi Krastev
 
+## Assumptions: 
+1. API 3: I have assumed we also need to pass the id of the game that needs to be recorded. Thus i have inserted it it as a first parameter. Example: 
+{"items":
+            [
+                {
+                    "game_id": 11, #This is where I a have added the game id
+                    "team_scores": [
+                        {
+                            "team_id": 11,
+                            "points": 12
+                        },
+                        {
+                            "team_id": 12,
+                            "points": 3
+                        }
+                    ],
+                    "player_scores": [
+                        {
+                            "player_id": 41,
+                            "points": 2
+                        },
+                        {
+                            "player_id": 43,
+                            "points": 3
+                        }
+                    ]
+                }
+            ]
+        }
 
+2. API 6: example on how my link looks: http://127.0.0.1:8000/players/?year=2021&player_id=41.
 
 **Edit a file, create a new file, and clone from Bitbucket in under 2 minutes**
 
